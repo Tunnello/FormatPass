@@ -10,7 +10,9 @@
       "Bash(npx jest *)",
       "Bash(npm test *)",
       "Bash(cd /d D:\\\\code\\\\FormatPass)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(npm run *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
