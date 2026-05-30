@@ -6,7 +6,7 @@ import { useApp } from '@/lib/context/AppContext'
 const MAX_FILE_SIZE = 30 * 1024 * 1024 // 30MB
 
 export default function UploadZone() {
-  const { dispatch } = useApp()
+  const { state, dispatch } = useApp()
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,6 +32,16 @@ export default function UploadZone() {
     [dispatch]
   )
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }, [])
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
@@ -53,21 +63,24 @@ export default function UploadZone() {
   return (
     <div className="w-full max-w-lg">
       <div
-        onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-        onDragLeave={() => setIsDragging(false)}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`
           relative flex flex-col items-center justify-center
           border-2 border-dashed rounded-xl p-12
           transition-colors cursor-pointer
-          ${isDragging ? 'border-accent bg-surface-soft' : 'border-hairline bg-surface-card'}
+          ${isDragging ? 'border-[#1a3a2a] bg-[#faf5e8]' : 'border-[#e5e5e5] bg-[#f5f0e0]'}
+          ${state.isProcessing ? 'pointer-events-none opacity-50' : ''}
         `}
-        style={{ borderColor: isDragging ? '#1a3a2a' : '#e5e5e5', backgroundColor: isDragging ? '#faf5e8' : '#f5f0e0' }}
       >
         <input
           type="file"
           accept=".docx"
           onChange={handleChange}
+          disabled={state.isProcessing}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby="upload-error"
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
         <div className="text-4xl mb-3">📄</div>
@@ -75,7 +88,7 @@ export default function UploadZone() {
         <p className="text-sm text-muted mt-1">支持 .docx 格式</p>
       </div>
       {error && (
-        <p className="mt-3 text-sm text-error text-center">{error}</p>
+        <p id="upload-error" className="mt-3 text-sm text-error text-center">{error}</p>
       )}
     </div>
   )

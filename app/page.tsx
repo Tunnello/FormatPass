@@ -30,8 +30,8 @@ export default function Home() {
             if (state.fileBuffer) router.push('/rules')
           }}
           disabled={!state.fileBuffer}
-          className="mt-8 px-5 py-3 rounded-md text-white font-semibold text-sm transition-opacity disabled:opacity-40"
-          style={{ backgroundColor: '#1a3a2a', height: 44 }}
+          className="mt-8 px-5 py-3 rounded-md text-white font-semibold text-sm transition-opacity disabled:opacity-40 h-11"
+          style={{ backgroundColor: '#1a3a2a' }}
         >
           开始检测
         </button>
