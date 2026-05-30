@@ -54,28 +54,33 @@ export function buildRulesFromForm(form: RuleFormData): FormatRule[] {
     A3: { width: 29.7, height: 42.0 },
   }
   const dim = paperDimensions[form.page.paperSize]
-  if (dim) {
-    rules.push(
-      {
-        id: 'page-size-width',
-        category: 'page',
-        name: '纸张宽度',
-        target: { type: 'page-size', dimension: 'width' },
-        expected: { kind: 'length', value: dim.width, unit: 'cm' },
-        status: 'pending',
-      },
-      {
-        id: 'page-size-height',
-        category: 'page',
-        name: '纸张高度',
-        target: { type: 'page-size', dimension: 'height' },
-        expected: { kind: 'length', value: dim.height, unit: 'cm' },
-        status: 'pending',
-      }
-    )
+  if (!dim) {
+    throw new Error('Unsupported paper size')
   }
+  rules.push(
+    {
+      id: 'page-size-width',
+      category: 'page',
+      name: '纸张宽度',
+      target: { type: 'page-size', dimension: 'width' },
+      expected: { kind: 'length', value: dim.width, unit: 'cm' },
+      status: 'pending',
+    },
+    {
+      id: 'page-size-height',
+      category: 'page',
+      name: '纸张高度',
+      target: { type: 'page-size', dimension: 'height' },
+      expected: { kind: 'length', value: dim.height, unit: 'cm' },
+      status: 'pending',
+    }
+  )
 
   // Body rules
+  const bodyFontSize = parseFloat(form.body.fontSize)
+  if (Number.isNaN(bodyFontSize)) {
+    throw new Error('Invalid font size value')
+  }
   rules.push(
     {
       id: 'body-font-cn',
@@ -98,7 +103,7 @@ export function buildRulesFromForm(form: RuleFormData): FormatRule[] {
       category: 'body',
       name: '正文字号',
       target: { type: 'font-size', scope: 'body', script: 'eastAsia' },
-      expected: { kind: 'length', value: parseFloat(form.body.fontSize), unit: 'pt' },
+      expected: { kind: 'length', value: bodyFontSize, unit: 'pt' },
       status: 'pending',
     },
     {
@@ -129,6 +134,10 @@ export function buildRulesFromForm(form: RuleFormData): FormatRule[] {
 
   // Heading rules
   for (const h of form.headings) {
+    const headingFontSize = parseFloat(h.fontSize)
+    if (Number.isNaN(headingFontSize)) {
+      throw new Error('Invalid heading font size value')
+    }
     const prefix = `heading-${h.level}`
     rules.push(
       {
@@ -144,7 +153,7 @@ export function buildRulesFromForm(form: RuleFormData): FormatRule[] {
         category: 'heading',
         name: `${h.level}级标题字号`,
         target: { type: 'font-size', scope: 'heading', level: h.level, script: 'eastAsia' },
-        expected: { kind: 'length', value: parseFloat(h.fontSize), unit: 'pt' },
+        expected: { kind: 'length', value: headingFontSize, unit: 'pt' },
         status: 'pending',
       },
       {
@@ -180,7 +189,14 @@ export function buildRulesFromForm(form: RuleFormData): FormatRule[] {
 function parseLineSpacing(value: string) {
   if (value.startsWith('固定值')) {
     const num = parseFloat(value.replace('固定值', '').trim())
+    if (Number.isNaN(num)) {
+      throw new Error('Invalid line spacing value')
+    }
     return { kind: 'lineSpacing' as const, value: num, rule: 'exact' as const }
   }
-  return { kind: 'lineSpacing' as const, value: parseFloat(value), rule: 'auto' as const }
+  const num = parseFloat(value)
+  if (Number.isNaN(num)) {
+    throw new Error('Invalid line spacing value')
+  }
+  return { kind: 'lineSpacing' as const, value: num, rule: 'auto' as const }
 }
