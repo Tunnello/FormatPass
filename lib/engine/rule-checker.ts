@@ -1,7 +1,10 @@
 import { FormatRule, RuleValue } from './rule-types'
 import { ExtractedDocument, StyleData } from '../parser/xml-extractor'
 import { resolveEffectiveStyle, resolveParagraphStyle } from '../parser/style-resolver'
-import { twipToCm, twipToPt } from '../utils/unit-converter'
+import { twipToCm, twipToPt, halfPointToPt } from '../utils/unit-converter'
+
+const TOLERANCE_CM = 0.06
+const TOLERANCE_PT = 0.6
 
 export function checkRules(
   rules: FormatRule[],
@@ -9,6 +12,10 @@ export function checkRules(
   styles: Map<string, StyleData>
 ): FormatRule[] {
   return rules.map((rule) => checkSingleRule(rule, doc, styles))
+}
+
+function getLocation(scope: string, level?: number): string {
+  return `第 1 个${scope === 'heading' ? level + '级标题' : '正文段落'}`
 }
 
 function checkSingleRule(rule: FormatRule, doc: ExtractedDocument, styles: Map<string, StyleData>): FormatRule {
@@ -25,21 +32,15 @@ function checkSingleRule(rule: FormatRule, doc: ExtractedDocument, styles: Map<s
     }
     const twip = marginMap[target.side]
     actual = { kind: 'length', value: parseFloat(twipToCm(twip).toFixed(2)), unit: 'cm' }
-  }
-
-  if (target.type === 'page-size') {
+  } else if (target.type === 'page-size') {
     const sizeMap: Record<string, number> = {
       width: doc.pageSetup.width,
       height: doc.pageSetup.height,
     }
     actual = { kind: 'length', value: parseFloat(twipToCm(sizeMap[target.dimension]).toFixed(2)), unit: 'cm' }
-  }
-
-  if (target.type === 'page-orientation') {
+  } else if (target.type === 'page-orientation') {
     actual = { kind: 'enum', value: doc.pageSetup.orientation }
-  }
-
-  if (target.type === 'font' || target.type === 'font-size' || target.type === 'alignment' || target.type === 'paragraph-spacing') {
+  } else if (target.type === 'font' || target.type === 'font-size' || target.type === 'alignment' || target.type === 'paragraph-spacing') {
     const paragraphs = getTargetParagraphs(doc, target.scope, target.level)
     if (paragraphs.length === 0) {
       return { ...rule, status: 'fail', actual: undefined, location: '未检测到目标段落' }
@@ -52,26 +53,20 @@ function checkSingleRule(rule: FormatRule, doc: ExtractedDocument, styles: Map<s
     if (target.type === 'font') {
       const font = target.script === 'eastAsia' ? effectiveRPr.fontEastAsia : effectiveRPr.fontAscii
       actual = font ? { kind: 'string', value: font } : undefined
-      location = `第 1 个${target.scope === 'heading' ? target.level + '级标题' : '正文段落'}`
-    }
-
-    if (target.type === 'font-size') {
+      location = getLocation(target.scope, target.level)
+    } else if (target.type === 'font-size') {
       const size = effectiveRPr.fontSize
-      actual = size ? { kind: 'length', value: size / 2, unit: 'pt' } : undefined
-      location = `第 1 个${target.scope === 'heading' ? target.level + '级标题' : '正文段落'}`
-    }
-
-    if (target.type === 'alignment') {
+      actual = size ? { kind: 'length', value: halfPointToPt(size), unit: 'pt' } : undefined
+      location = getLocation(target.scope, target.level)
+    } else if (target.type === 'alignment') {
       const align = effectivePPr.alignment
       actual = align ? { kind: 'enum', value: align } : undefined
-      location = `第 1 个${target.scope === 'heading' ? target.level + '级标题' : '正文段落'}`
-    }
-
-    if (target.type === 'paragraph-spacing') {
+      location = getLocation(target.scope, target.level)
+    } else if (target.type === 'paragraph-spacing') {
       let val: number | null = null
       if (target.kind === 'before') val = effectivePPr.spaceBefore
-      if (target.kind === 'after') val = effectivePPr.spaceAfter
-      if (target.kind === 'line' && effectivePPr.lineSpacing) {
+      else if (target.kind === 'after') val = effectivePPr.spaceAfter
+      else if (target.kind === 'line' && effectivePPr.lineSpacing) {
         if (effectivePPr.lineSpacing.rule === 'auto') {
           actual = { kind: 'lineSpacing', value: effectivePPr.lineSpacing.value / 240, rule: 'auto' }
         } else {
@@ -81,7 +76,7 @@ function checkSingleRule(rule: FormatRule, doc: ExtractedDocument, styles: Map<s
       if (val !== null) {
         actual = { kind: 'length', value: twipToPt(val), unit: 'pt' }
       }
-      location = `第 1 个${target.scope === 'heading' ? target.level + '级标题' : '正文段落'}`
+      location = getLocation(target.scope, target.level)
     }
   }
 
@@ -111,11 +106,7 @@ function compareValues(expected: RuleValue, actual: RuleValue | undefined): bool
   if (!actual) return false
 
   if (expected.kind === 'length' && actual.kind === 'length') {
-    const eVal = normalizeLength(expected.value, expected.unit)
-    const aVal = normalizeLength(actual.value, actual.unit)
-    const diff = Math.abs(eVal - aVal)
-    if (expected.unit === 'cm') return diff < 0.06
-    return diff < 0.6
+    return compareLength(expected, actual)
   }
 
   if (expected.kind === 'string' && actual.kind === 'string') {
@@ -130,15 +121,29 @@ function compareValues(expected: RuleValue, actual: RuleValue | undefined): bool
     if (expected.rule !== actual.rule) return false
     const diff = Math.abs(expected.value - actual.value)
     if (expected.rule === 'auto') return diff < 0.05
-    return diff < 0.6
+    return diff < TOLERANCE_PT
   }
 
   return false
 }
 
-function normalizeLength(value: number, unit: string): number {
-  if (unit === 'cm') return value
-  if (unit === 'pt') return value * 2.54 / 72
-  if (unit === 'twip') return value * 2.54 / 1440
-  return value
+function compareLength(expected: { value: number; unit: string }, actual: { value: number; unit: string }): boolean {
+  let aVal: number
+  if (actual.unit === expected.unit) {
+    aVal = actual.value
+  } else if (expected.unit === 'cm' && actual.unit === 'pt') {
+    aVal = actual.value * 2.54 / 72
+  } else if (expected.unit === 'pt' && actual.unit === 'cm') {
+    aVal = actual.value * 72 / 2.54
+  } else if (expected.unit === 'cm' && actual.unit === 'twip') {
+    aVal = actual.value * 2.54 / 1440
+  } else if (expected.unit === 'pt' && actual.unit === 'twip') {
+    aVal = actual.value / 20
+  } else {
+    aVal = actual.value
+  }
+  const diff = Math.abs(expected.value - aVal)
+  if (expected.unit === 'cm') return diff < TOLERANCE_CM
+  if (expected.unit === 'pt') return diff < TOLERANCE_PT
+  return diff < TOLERANCE_PT
 }
