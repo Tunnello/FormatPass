@@ -5,7 +5,9 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(npm install *)",
-      "Bash(timeout 30 npx next dev --port 3000)"
+      "Bash(timeout 30 npx next dev --port 3000)",
+      "Bash(git *)",
+      "Bash(npx jest *)"
     ]
   }
 }
