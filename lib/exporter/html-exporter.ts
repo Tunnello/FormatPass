@@ -1,5 +1,13 @@
 import { FormatRule } from '../engine/rule-types'
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 export function generateHtmlReport(fileName: string, rules: FormatRule[]): string {
   const now = new Date().toLocaleString('zh-CN')
   const passedCount = rules.filter((r) => r.status === 'pass').length
@@ -21,20 +29,20 @@ export function generateHtmlReport(fileName: string, rules: FormatRule[]): strin
           const color = isPass ? '#22c55e' : '#ef4444'
           const icon = isPass ? '✅' : '❌'
           const detail = isPass
-            ? formatValue(rule.actual)
-            : `预期 ${formatValue(rule.expected)}，实际 ${formatValue(rule.actual)}`
-          const location = rule.location ? `（${rule.location}）` : ''
+            ? escapeHtml(formatValue(rule.actual))
+            : `预期 ${escapeHtml(formatValue(rule.expected))}，实际 ${escapeHtml(formatValue(rule.actual))}`
+          const location = rule.location ? `（${escapeHtml(rule.location)}）` : ''
           return `
             <div style="margin: 8px 0; color: ${isPass ? '#3a3a3a' : '#ef4444'};">
               <span style="color: ${color};">${icon}</span>
-              <strong>${rule.name}</strong>：${detail}${location}
+              <strong>${escapeHtml(rule.name)}</strong>：${detail}${location}
             </div>
           `
         })
         .join('')
       return `
         <div style="margin-bottom: 24px; padding: 16px; background: #faf5e8; border-radius: 16px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #0a0a0a;">${cat.label}</h3>
+          <h3 style="margin: 0 0 12px 0; font-size: 18px; color: #0a0a0a;">${escapeHtml(cat.label)}</h3>
           ${rows}
         </div>
       `
@@ -45,7 +53,7 @@ export function generateHtmlReport(fileName: string, rules: FormatRule[]): strin
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>格式检测报告 - ${fileName}</title>
+  <title>格式检测报告 - ${escapeHtml(fileName)}</title>
   <style>
     body { font-family: Inter, system-ui, sans-serif; background: #fffaf0; color: #0a0a0a; padding: 40px; max-width: 800px; margin: 0 auto; }
     h1 { font-size: 28px; margin-bottom: 8px; }
@@ -57,7 +65,7 @@ export function generateHtmlReport(fileName: string, rules: FormatRule[]): strin
 <body>
   <h1>📋 格式检测报告</h1>
   <div class="meta">
-    <div>论文文件：${fileName}</div>
+    <div>论文文件：${escapeHtml(fileName)}</div>
     <div>检测时间：${now}</div>
   </div>
   <div class="summary">
@@ -73,5 +81,6 @@ function formatValue(v: { kind: string; value: number | string; unit?: string; r
   if (!v) return '未检测到'
   if (v.kind === 'length') return `${v.value} ${v.unit}`
   if (v.kind === 'lineSpacing') return v.rule === 'auto' ? `${v.value} 倍` : `${v.value} 磅`
+  if (v.kind === 'enum') return String(v.value)
   return String(v.value)
 }
