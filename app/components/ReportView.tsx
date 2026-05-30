@@ -1,6 +1,7 @@
 'use client'
 
 import { FormatRule } from '@/lib/engine/rule-types'
+import { formatValue } from '@/lib/exporter/format-value'
 
 export default function ReportView({ rules }: { rules: FormatRule[] }) {
   const passed = rules.filter((r) => r.status === 'pass')
@@ -28,10 +29,11 @@ export default function ReportView({ rules }: { rules: FormatRule[] }) {
         return (
           <div key={cat.key} className="rounded-xl p-5 mb-6 bg-surface-soft">
             <h3 className="text-base font-semibold mb-4 text-ink">{cat.label}</h3>
-            <div className="space-y-3">
+            <div role="list" className="space-y-3">
               {catRules.map((rule) => (
-                <div key={rule.id} className="flex items-start gap-2 text-sm">
-                  <span className="mt-0.5">{rule.status === 'pass' ? '✅' : '❌'}</span>
+                <div key={rule.id} role="listitem" className="flex items-start gap-2 text-sm">
+                  <span className="mt-0.5" aria-hidden="true">{rule.status === 'pass' ? '✅' : '❌'}</span>
+                  <span className="sr-only">{rule.status === 'pass' ? '通过' : '不通过'}</span>
                   <div className="flex-1">
                     <span className={`font-medium ${rule.status === 'fail' ? 'text-error' : 'text-body-text'}`}>
                       {rule.name}
@@ -53,11 +55,4 @@ export default function ReportView({ rules }: { rules: FormatRule[] }) {
       })}
     </div>
   )
-}
-
-function formatValue(v: { kind: string; value: number | string; unit?: string; rule?: string } | undefined): string {
-  if (!v) return '未检测到'
-  if (v.kind === 'length') return `${v.value} ${v.unit}`
-  if (v.kind === 'lineSpacing') return v.rule === 'auto' ? `${v.value} 倍` : `${v.value} 磅`
-  return String(v.value)
 }

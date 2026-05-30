@@ -1,34 +1,51 @@
 'use client'
 
+import { useRef } from 'react'
 import { useApp } from '@/lib/context/AppContext'
 import { generateHtmlReport } from '@/lib/exporter/html-exporter'
 import { generateDocxReportBlob } from '@/lib/exporter/docx-exporter'
 
 export default function ReportExport() {
   const { state } = useApp()
+  const urlRef = useRef<string | null>(null)
+
+  const cleanup = () => {
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current)
+      urlRef.current = null
+    }
+  }
 
   const handleExportHtml = () => {
     if (!state.report) return
-    const html = generateHtmlReport(state.fileName, state.report)
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `格式检测报告-${state.fileName.replace('.docx', '')}.html`
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      cleanup()
+      const html = generateHtmlReport(state.fileName, state.report)
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      urlRef.current = url
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `格式检测报告-${state.fileName.replace('.docx', '')}.html`
+      a.click()
+      setTimeout(cleanup, 1000)
+    } catch (err) {
+      alert('HTML 导出失败')
+    }
   }
 
   const handleExportDocx = async () => {
     if (!state.report) return
     try {
+      cleanup()
       const blob = await generateDocxReportBlob(state.fileName, state.report)
       const url = URL.createObjectURL(blob)
+      urlRef.current = url
       const a = document.createElement('a')
       a.href = url
       a.download = `格式检测报告-${state.fileName.replace('.docx', '')}.docx`
       a.click()
-      URL.revokeObjectURL(url)
+      setTimeout(cleanup, 1000)
     } catch (err) {
       alert('DOCX 导出失败')
     }
