@@ -15,21 +15,19 @@ export interface EffectiveStyle {
 }
 
 export function resolveEffectiveStyle(
-  paragraph: { rPr: Element | null; styleId?: string },
+  paragraph: { rPr: Element | null; pPr: Element | null; styleId?: string },
   styles: Map<string, StyleData>,
   docDefaults: { pPr: Element | null; rPr: Element | null }
 ): EffectiveStyle {
-  return {
+  const runProps = {
     fontSize: resolveNumericProp(paragraph.rPr, styles.get(paragraph.styleId || '')?.rPr, docDefaults.rPr, 'sz'),
     fontAscii: resolveStringProp(paragraph.rPr, styles.get(paragraph.styleId || '')?.rPr, docDefaults.rPr, 'rFonts', 'ascii'),
     fontEastAsia: resolveStringProp(paragraph.rPr, styles.get(paragraph.styleId || '')?.rPr, docDefaults.rPr, 'rFonts', 'eastAsia'),
     bold: resolveBoolProp(paragraph.rPr, styles.get(paragraph.styleId || '')?.rPr, docDefaults.rPr, 'b'),
     italic: resolveBoolProp(paragraph.rPr, styles.get(paragraph.styleId || '')?.rPr, docDefaults.rPr, 'i'),
-    alignment: null,
-    spaceBefore: null,
-    spaceAfter: null,
-    lineSpacing: null,
   }
+  const paraProps = resolveParagraphStyle(paragraph.pPr, paragraph.styleId, styles, docDefaults)
+  return { ...runProps, ...paraProps }
 }
 
 export function resolveParagraphStyle(
@@ -64,14 +62,8 @@ export function resolveParagraphStyle(
       pPr?.getElementsByTagNameNS(NS, 'jc')[0]?.getAttributeNS(NS, 'val') ||
       stylePPr?.getElementsByTagNameNS(NS, 'jc')[0]?.getAttributeNS(NS, 'val') ||
       null,
-    spaceBefore:
-      resolveAttrFromChain(spacingNode, 'before') ||
-      resolveAttrFromChain(stylePPr?.getElementsByTagNameNS(NS, 'spacing')[0], 'before') ||
-      null,
-    spaceAfter:
-      resolveAttrFromChain(spacingNode, 'after') ||
-      resolveAttrFromChain(stylePPr?.getElementsByTagNameNS(NS, 'spacing')[0], 'after') ||
-      null,
+    spaceBefore: resolveAttrFromChain(spacingNode, 'before'),
+    spaceAfter: resolveAttrFromChain(spacingNode, 'after'),
     lineSpacing,
   }
 }
