@@ -3,7 +3,9 @@
     "allow": [
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npm install *)",
+      "Bash(timeout 30 npx next dev --port 3000)"
     ]
   }
 }
