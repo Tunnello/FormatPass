@@ -1,9 +1,6 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { AppProvider } from '@/lib/context/AppContext'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'FormatPass - 毕业论文格式检测',
@@ -13,7 +10,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body className={`${inter.className} min-h-screen bg-canvas text-ink`}>
+      <body className="min-h-screen bg-canvas text-ink">
         <AppProvider>{children}</AppProvider>
       </body>
     </html>
