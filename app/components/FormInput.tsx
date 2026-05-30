@@ -1,6 +1,6 @@
 export default function FormInput({ label, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string }) {
   return (
-    <label className="flex flex-col text-sm">
+    <label htmlFor={props.id} className="flex flex-col text-sm">
       <span className="mb-1 text-muted">{label}</span>
       <input
         {...props}
