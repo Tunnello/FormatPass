@@ -8,7 +8,9 @@
       "Bash(timeout 30 npx next dev --port 3000)",
       "Bash(git *)",
       "Bash(npx jest *)",
-      "Bash(npm test *)"
+      "Bash(npm test *)",
+      "Bash(cd /d D:\\\\code\\\\FormatPass)",
+      "Bash(npx next *)"
     ]
   }
 }

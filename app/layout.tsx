@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { AppProvider } from '@/lib/context/AppContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body className={`${inter.className} min-h-screen bg-canvas text-ink`}>
-        {children}
+        <AppProvider>{children}</AppProvider>
       </body>
     </html>
   )
