@@ -61,4 +61,87 @@ describe('xml-extractor', () => {
     const h1 = styles.get('Heading1')!
     expect(h1.basedOn).toBe('Normal')
   })
+
+  test('default page setup fallback when sectPr is missing', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:t>Hello</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>`
+    const doc = extractDocument(xml)
+    expect(doc.pageSetup.width).toBe(11906)
+    expect(doc.pageSetup.height).toBe(16838)
+    expect(doc.pageSetup.orientation).toBe('portrait')
+    expect(doc.pageSetup.marginTop).toBe(1440)
+    expect(doc.pageSetup.marginRight).toBe(1440)
+    expect(doc.pageSetup.marginBottom).toBe(1440)
+    expect(doc.pageSetup.marginLeft).toBe(1440)
+  })
+
+  test('defaultStyles is { pPr: null, rPr: null } when docDefaults is missing', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:t>Hello</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>`
+    const doc = extractDocument(xml)
+    expect(doc.defaultStyles).toEqual({ pPr: null, rPr: null })
+  })
+
+  test('paragraph with multiple runs concatenates text', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:t>Hello </w:t></w:r>
+      <w:r><w:t>world</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>`
+    const doc = extractDocument(xml)
+    expect(doc.paragraphs.length).toBe(1)
+    expect(doc.paragraphs[0].text).toBe('Hello world')
+  })
+
+  test('outline level extraction', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr><w:outlineLvl w:val="1"/></w:pPr>
+      <w:r><w:t>Section</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>`
+    const doc = extractDocument(xml)
+    expect(doc.paragraphs[0].outlineLvl).toBe(1)
+  })
+
+  test('isDefault attribute is parsed correctly', () => {
+    const styles = extractStyles(sampleStylesXml)
+    const normal = styles.get('Normal')!
+    expect(normal.isDefault).toBe(true)
+    const h1 = styles.get('Heading1')!
+    expect(h1.isDefault).toBe(false)
+  })
+
+  test('complete margin assertions in existing page setup', () => {
+    const doc = extractDocument(sampleDocumentXml)
+    expect(doc.pageSetup.marginTop).toBe(1440)
+    expect(doc.pageSetup.marginRight).toBe(1800)
+    expect(doc.pageSetup.marginBottom).toBe(1440)
+    expect(doc.pageSetup.marginLeft).toBe(1800)
+  })
+
+  test('empty styles XML returns empty Map', () => {
+    const styles = extractStyles('')
+    expect(styles).toBeInstanceOf(Map)
+    expect(styles.size).toBe(0)
+  })
 })
