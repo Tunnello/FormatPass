@@ -1,4 +1,5 @@
 import { FormatRule } from '../engine/rule-types'
+import { formatValue } from './format-value'
 import {
   Document,
   Packer,
@@ -56,7 +57,7 @@ export async function generateDocxReportBlob(fileName: string, rules: FormatRule
 
     const tableRows = [
       new TableRow({
-        children: ['规则名称', '预期值', '实际值', '结果'].map(
+        children: ['规则名称', '预期值', '实际值', '结果', '位置'].map(
           (header) =>
             new TableCell({
               children: [new Paragraph({ children: [new TextRun({ text: header, bold: true })] })],
@@ -78,6 +79,7 @@ export async function generateDocxReportBlob(fileName: string, rules: FormatRule
                 type: ShadingType.CLEAR,
               },
             }),
+            new TableCell({ children: [new Paragraph(rule.location ?? '')] }),
           ],
         })
       }),
@@ -105,9 +107,3 @@ export async function generateDocxReportBlob(fileName: string, rules: FormatRule
   return await Packer.toBlob(doc)
 }
 
-function formatValue(v: { kind: string; value: number | string; unit?: string; rule?: string } | undefined): string {
-  if (!v) return '未检测到'
-  if (v.kind === 'length') return `${v.value} ${v.unit}`
-  if (v.kind === 'lineSpacing') return v.rule === 'auto' ? `${v.value} 倍` : `${v.value} 磅`
-  return String(v.value)
-}
