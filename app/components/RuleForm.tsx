@@ -10,6 +10,8 @@ import { extractDocument, extractStyles } from '@/lib/parser/xml-extractor'
 import { checkRules } from '@/lib/engine/rule-checker'
 import RuleAccordion from './RuleAccordion'
 import ProgressBar from './ProgressBar'
+import FormInput from './FormInput'
+import FormSelect from './FormSelect'
 
 const PAPER_OPTIONS = ['A4', 'Letter', 'A3']
 const ORIENTATION_OPTIONS = [
@@ -25,6 +27,13 @@ const ALIGNMENT_OPTIONS = [
   { value: 'center', label: '居中' },
   { value: 'right', label: '右对齐' },
 ]
+
+const marginLabels: Record<string, string> = {
+  marginTop: '上',
+  marginBottom: '下',
+  marginLeft: '左',
+  marginRight: '右',
+}
 
 export default function RuleForm() {
   const router = useRouter()
@@ -78,13 +87,12 @@ export default function RuleForm() {
     <div className="w-full max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-medium mb-1" style={{ color: '#0a0a0a' }}>填写格式规则</h2>
+          <h2 className="text-2xl font-medium mb-1 text-ink">填写格式规则</h2>
           <p className="text-sm text-muted">文件：{state.fileName}</p>
         </div>
         <button
           onClick={() => dispatch({ type: 'RESET' })}
-          className="text-sm underline"
-          style={{ color: '#6a6a6a' }}
+          className="text-sm underline text-muted"
         >
           更换文件
         </button>
@@ -95,185 +103,143 @@ export default function RuleForm() {
       <RuleAccordion title="📄 页面设置" defaultOpen>
         <div className="grid grid-cols-2 gap-4">
           {['marginTop', 'marginBottom', 'marginLeft', 'marginRight'].map((field) => (
-            <label key={field} className="flex flex-col text-sm">
-              <span className="mb-1 text-muted">页边距-{field.replace('margin', '').replace('Top','上').replace('Bottom','下').replace('Left','左').replace('Right','右')} (cm)</span>
-              <input
-                type="number"
-                step={0.01}
-                value={form.page[field as keyof typeof form.page] as number}
-                onChange={(e) => updatePage(field, parseFloat(e.target.value))}
-                className="px-3 py-2 rounded-md border text-sm"
-                style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-              />
-            </label>
+            <FormInput
+              key={field}
+              id={`page-${field}`}
+              label={`页边距-${marginLabels[field]} (cm)`}
+              type="number"
+              step={0.01}
+              value={form.page[field as keyof typeof form.page] as number}
+              onChange={(e) => updatePage(field, parseFloat(e.target.value))}
+            />
           ))}
         </div>
         <div className="grid grid-cols-2 gap-4 mt-4">
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">纸张大小</span>
-            <select
-              value={form.page.paperSize}
-              onChange={(e) => updatePage('paperSize', e.target.value)}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            >
-              {PAPER_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </label>
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">页面方向</span>
-            <select
-              value={form.page.orientation}
-              onChange={(e) => updatePage('orientation', e.target.value)}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            >
-              {ORIENTATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </label>
+          <FormSelect
+            id="page-paperSize"
+            label="纸张大小"
+            value={form.page.paperSize}
+            onChange={(e) => updatePage('paperSize', e.target.value)}
+          >
+            {PAPER_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </FormSelect>
+          <FormSelect
+            id="page-orientation"
+            label="页面方向"
+            value={form.page.orientation}
+            onChange={(e) => updatePage('orientation', e.target.value)}
+          >
+            {ORIENTATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </FormSelect>
         </div>
       </RuleAccordion>
 
       <RuleAccordion title="✍️ 正文格式" defaultOpen>
         <div className="grid grid-cols-2 gap-4">
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">正文中文字体</span>
-            <select
-              value={form.body.fontCn}
-              onChange={(e) => updateBody('fontCn', e.target.value)}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            >
-              {FONT_CN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </label>
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">正文西文字体</span>
-            <select
-              value={form.body.fontEn}
-              onChange={(e) => updateBody('fontEn', e.target.value)}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            >
-              {FONT_EN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </label>
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">正文字号</span>
-            <select
-              value={form.body.fontSize}
-              onChange={(e) => updateBody('fontSize', e.target.value)}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            >
-              {FONT_SIZE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </label>
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">行距</span>
-            <select
-              value={form.body.lineSpacing}
-              onChange={(e) => updateBody('lineSpacing', e.target.value)}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            >
-              {LINE_SPACING_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </label>
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">段前间距 (pt)</span>
-            <input
-              type="number"
-              value={form.body.spaceBefore}
-              onChange={(e) => updateBody('spaceBefore', parseFloat(e.target.value))}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            />
-          </label>
-          <label className="flex flex-col text-sm">
-            <span className="mb-1 text-muted">段后间距 (pt)</span>
-            <input
-              type="number"
-              value={form.body.spaceAfter}
-              onChange={(e) => updateBody('spaceAfter', parseFloat(e.target.value))}
-              className="px-3 py-2 rounded-md border text-sm"
-              style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-            />
-          </label>
+          <FormSelect
+            id="body-fontCn"
+            label="正文中文字体"
+            value={form.body.fontCn}
+            onChange={(e) => updateBody('fontCn', e.target.value)}
+          >
+            {FONT_CN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </FormSelect>
+          <FormSelect
+            id="body-fontEn"
+            label="正文西文字体"
+            value={form.body.fontEn}
+            onChange={(e) => updateBody('fontEn', e.target.value)}
+          >
+            {FONT_EN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </FormSelect>
+          <FormSelect
+            id="body-fontSize"
+            label="正文字号"
+            value={form.body.fontSize}
+            onChange={(e) => updateBody('fontSize', e.target.value)}
+          >
+            {FONT_SIZE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </FormSelect>
+          <FormSelect
+            id="body-lineSpacing"
+            label="行距"
+            value={form.body.lineSpacing}
+            onChange={(e) => updateBody('lineSpacing', e.target.value)}
+          >
+            {LINE_SPACING_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+          </FormSelect>
+          <FormInput
+            id="body-spaceBefore"
+            label="段前间距 (pt)"
+            type="number"
+            value={form.body.spaceBefore}
+            onChange={(e) => updateBody('spaceBefore', parseFloat(e.target.value))}
+          />
+          <FormInput
+            id="body-spaceAfter"
+            label="段后间距 (pt)"
+            type="number"
+            value={form.body.spaceAfter}
+            onChange={(e) => updateBody('spaceAfter', parseFloat(e.target.value))}
+          />
         </div>
       </RuleAccordion>
 
       <RuleAccordion title="📌 标题格式">
         {form.headings.map((h, idx) => (
-          <div key={h.level} className="mb-6 pb-6 border-b" style={{ borderColor: '#f0f0f0' }}>
-            <h4 className="font-semibold text-sm mb-3" style={{ color: '#1a1a1a' }}>{h.level}级标题</h4>
+          <div key={idx} className="mb-6 pb-6 border-b border-[#f0f0f0]">
+            <h4 className="font-semibold text-sm mb-3 text-body-strong">{h.level}级标题</h4>
             <div className="grid grid-cols-2 gap-4">
-              <label className="flex flex-col text-sm">
-                <span className="mb-1 text-muted">字体</span>
-                <select
-                  value={h.font}
-                  onChange={(e) => updateHeading(idx, 'font', e.target.value)}
-                  className="px-3 py-2 rounded-md border text-sm"
-                  style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-                >
-                  {FONT_CN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </label>
-              <label className="flex flex-col text-sm">
-                <span className="mb-1 text-muted">字号</span>
-                <select
-                  value={h.fontSize}
-                  onChange={(e) => updateHeading(idx, 'fontSize', e.target.value)}
-                  className="px-3 py-2 rounded-md border text-sm"
-                  style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-                >
-                  {FONT_SIZE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </label>
-              <label className="flex flex-col text-sm">
-                <span className="mb-1 text-muted">段前间距 (pt)</span>
-                <input
-                  type="number"
-                  value={h.spaceBefore}
-                  onChange={(e) => updateHeading(idx, 'spaceBefore', parseFloat(e.target.value))}
-                  className="px-3 py-2 rounded-md border text-sm"
-                  style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                <span className="mb-1 text-muted">段后间距 (pt)</span>
-                <input
-                  type="number"
-                  value={h.spaceAfter}
-                  onChange={(e) => updateHeading(idx, 'spaceAfter', parseFloat(e.target.value))}
-                  className="px-3 py-2 rounded-md border text-sm"
-                  style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-                />
-              </label>
-              <label className="flex flex-col text-sm">
-                <span className="mb-1 text-muted">对齐方式</span>
-                <select
-                  value={h.alignment}
-                  onChange={(e) => updateHeading(idx, 'alignment', e.target.value)}
-                  className="px-3 py-2 rounded-md border text-sm"
-                  style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44 }}
-                >
-                  {ALIGNMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </label>
+              <FormSelect
+                id={`heading-${h.level}-font`}
+                label="字体"
+                value={h.font}
+                onChange={(e) => updateHeading(idx, 'font', e.target.value)}
+              >
+                {FONT_CN_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </FormSelect>
+              <FormSelect
+                id={`heading-${h.level}-fontSize`}
+                label="字号"
+                value={h.fontSize}
+                onChange={(e) => updateHeading(idx, 'fontSize', e.target.value)}
+              >
+                {FONT_SIZE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </FormSelect>
+              <FormInput
+                id={`heading-${h.level}-spaceBefore`}
+                label="段前间距 (pt)"
+                type="number"
+                value={h.spaceBefore}
+                onChange={(e) => updateHeading(idx, 'spaceBefore', parseFloat(e.target.value))}
+              />
+              <FormInput
+                id={`heading-${h.level}-spaceAfter`}
+                label="段后间距 (pt)"
+                type="number"
+                value={h.spaceAfter}
+                onChange={(e) => updateHeading(idx, 'spaceAfter', parseFloat(e.target.value))}
+              />
+              <FormSelect
+                id={`heading-${h.level}-alignment`}
+                label="对齐方式"
+                value={h.alignment}
+                onChange={(e) => updateHeading(idx, 'alignment', e.target.value)}
+              >
+                {ALIGNMENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </FormSelect>
             </div>
           </div>
         ))}
       </RuleAccordion>
 
-      {state.error && <p className="my-4 text-sm text-center" style={{ color: '#ef4444' }}>{state.error}</p>}
+      {state.error && <p className="my-4 text-sm text-center text-error">{state.error}</p>}
 
       <div className="flex items-center gap-4 mt-8">
         <button
           onClick={handleCheck}
           disabled={state.isProcessing}
-          className="flex-1 px-5 py-3 rounded-md text-white font-semibold text-sm transition-opacity disabled:opacity-40"
-          style={{ backgroundColor: '#1a3a2a', height: 44 }}
+          className="flex-1 px-5 py-3 rounded-md text-white font-semibold text-sm transition-opacity disabled:opacity-40 bg-accent h-11"
         >
           {state.isProcessing ? '检测中…' : '开始检测'}
         </button>
@@ -287,8 +253,7 @@ export default function RuleForm() {
               { level: 3, font: '黑体', fontSize: '12pt', spaceBefore: 12, spaceAfter: 6, alignment: 'left' },
             ],
           })}
-          className="px-5 py-3 rounded-md text-sm font-semibold border"
-          style={{ borderColor: '#e5e5e5', backgroundColor: '#fffaf0', height: 44, color: '#0a0a0a' }}
+          className="px-5 py-3 rounded-md text-sm font-semibold border border-hairline bg-canvas h-11 text-ink"
         >
           重置规则
         </button>
