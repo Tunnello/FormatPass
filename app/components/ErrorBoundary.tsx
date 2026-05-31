@@ -16,8 +16,12 @@ export default class ErrorBoundary extends Component<Props, State> {
     this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError(): State {
+  static getDerivedStateFromError(_error: Error): State {
     return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
   }
 
   render() {
@@ -27,6 +31,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <h2 className="text-xl font-semibold mb-2 text-ink">出错了</h2>
           <p className="text-sm text-muted mb-4">应用遇到意外错误，请刷新页面重试。</p>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="px-5 py-3 rounded-md text-white text-sm font-semibold bg-accent h-11"
           >
