@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AppProvider } from '@/lib/context/AppContext'
+import ErrorBoundary from './components/ErrorBoundary'
 
 export const metadata: Metadata = {
   title: 'FormatPass - 毕业论文格式检测',
@@ -11,7 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body className="min-h-screen bg-canvas text-ink">
-        <AppProvider>{children}</AppProvider>
+        <ErrorBoundary>
+          <AppProvider>{children}</AppProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
