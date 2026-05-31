@@ -20,17 +20,20 @@ export default function Home() {
           毕业论文格式检测
         </h1>
         <p className="text-base text-center mb-10 text-body-text">
-          上传论文，一键排查格式问题
+          上传模板与论文，一键排查格式问题
         </p>
 
-        <UploadZone />
+        <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <UploadZone role="template" label="📋 上传格式模板 / 要求文档" />
+          <UploadZone role="thesis" label="📄 上传你的论文" />
+        </div>
 
         <button
           onClick={() => {
-            if (state.fileBuffer) router.push('/rules')
+            if (state.thesisFileBuffer && state.templateFileBuffer) router.push('/rules')
           }}
-          disabled={!state.fileBuffer}
-          className="mt-8 px-5 py-3 rounded-md text-white font-semibold text-sm transition-opacity disabled:opacity-40 h-11 bg-accent"
+          disabled={!state.thesisFileBuffer || !state.templateFileBuffer}
+          className="mt-2 px-5 py-3 rounded-md text-white font-semibold text-sm transition-opacity disabled:opacity-40 h-11 bg-accent"
         >
           开始检测
         </button>

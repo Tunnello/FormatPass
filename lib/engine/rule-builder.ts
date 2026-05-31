@@ -1,4 +1,4 @@
-import { FormatRule, RuleFormData } from './rule-types'
+import { FormatRule, RuleFormData, RuleValue } from './rule-types'
 
 export function buildRulesFromForm(form: RuleFormData): FormatRule[] {
   const rules: FormatRule[] = []
@@ -199,4 +199,88 @@ function parseLineSpacing(value: string) {
     throw new Error('Invalid line spacing value')
   }
   return { kind: 'lineSpacing' as const, value: num, rule: 'auto' as const }
+}
+
+export function rulesToFormData(rules: FormatRule[]): RuleFormData {
+  const findExpected = (idPrefix: string) => rules.find((r) => r.id === idPrefix)?.expected
+  const getLength = (rv: RuleValue | undefined) => rv?.kind === 'length' ? rv.value : 0
+  const getString = (rv: RuleValue | undefined) => rv?.kind === 'string' ? rv.value : ''
+  const getEnum = (rv: RuleValue | undefined) => rv?.kind === 'enum' ? rv.value : ''
+  const getLineSpacing = (rv: RuleValue | undefined) => rv?.kind === 'lineSpacing' ? rv : { value: 1.5, rule: 'auto' as const }
+
+  const width = getLength(findExpected('page-size-width'))
+  const height = getLength(findExpected('page-size-height'))
+
+  const bodyLineSpacing = getLineSpacing(findExpected('body-line-spacing'))
+
+  const headings: RuleFormData['headings'] = []
+  for (let level = 1; level <= 3; level++) {
+    const font = getString(findExpected(`heading-${level}-font`))
+    const fontSize = getLength(findExpected(`heading-${level}-font-size`))
+    const spaceBefore = getLength(findExpected(`heading-${level}-space-before`))
+    const spaceAfter = getLength(findExpected(`heading-${level}-space-after`))
+    const alignment = getEnum(findExpected(`heading-${level}-alignment`))
+    if (font || fontSize > 0) {
+      headings.push({
+        level,
+        font: font || '黑体',
+        fontSize: ptToFontSizeOption(fontSize || 12),
+        spaceBefore: spaceBefore || 0,
+        spaceAfter: spaceAfter || 0,
+        alignment: alignment || 'left',
+      })
+    }
+  }
+
+  return {
+    page: {
+      marginTop: getLength(findExpected('page-margin-top')) || 2.54,
+      marginBottom: getLength(findExpected('page-margin-bottom')) || 2.54,
+      marginLeft: getLength(findExpected('page-margin-left')) || 3.17,
+      marginRight: getLength(findExpected('page-margin-right')) || 3.17,
+      paperSize: inferPaperSize(width, height),
+      orientation: (getEnum(findExpected('page-orientation')) || 'portrait') as 'portrait' | 'landscape',
+    },
+    body: {
+      fontCn: getString(findExpected('body-font-cn')) || '宋体',
+      fontEn: getString(findExpected('body-font-en')) || 'Times New Roman',
+      fontSize: ptToFontSizeOption(getLength(findExpected('body-font-size')) || 12),
+      lineSpacing: lineSpacingToOption(bodyLineSpacing),
+      spaceBefore: getLength(findExpected('body-space-before')) || 0,
+      spaceAfter: getLength(findExpected('body-space-after')) || 0,
+    },
+    headings,
+  }
+}
+
+function inferPaperSize(width: number, height: number): 'A4' | 'Letter' | 'A3' {
+  const sizes: { name: 'A4' | 'Letter' | 'A3'; width: number; height: number }[] = [
+    { name: 'A4', width: 21.0, height: 29.7 },
+    { name: 'Letter', width: 21.59, height: 27.94 },
+    { name: 'A3', width: 29.7, height: 42.0 },
+  ]
+  for (const s of sizes) {
+    if (Math.abs(width - s.width) < 0.5 && Math.abs(height - s.height) < 0.5) {
+      return s.name
+    }
+  }
+  return 'A4'
+}
+
+function ptToFontSizeOption(pt: number): string {
+  if (Math.abs(pt - 10.5) < 0.5) return '五号 10.5pt'
+  if (Math.abs(pt - 12) < 0.5) return '小四 12pt'
+  if (Math.abs(pt - 14) < 0.5) return '四号 14pt'
+  return `${pt}pt`
+}
+
+function lineSpacingToOption(value: { value: number; rule: 'auto' | 'exact' }): string {
+  if (value.rule === 'auto') {
+    if (Math.abs(value.value - 1.0) < 0.05) return '1.0'
+    if (Math.abs(value.value - 1.15) < 0.05) return '1.15'
+    if (Math.abs(value.value - 1.5) < 0.05) return '1.5'
+    if (Math.abs(value.value - 2.0) < 0.05) return '2.0'
+    return String(value.value)
+  }
+  return `固定值 ${Math.round(value.value)} 磅`
 }

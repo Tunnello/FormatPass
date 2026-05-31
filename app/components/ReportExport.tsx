@@ -16,17 +16,19 @@ export default function ReportExport() {
     }
   }
 
+  const thesisName = state.thesisFileName || '未命名'
+
   const handleExportHtml = () => {
     if (!state.report) return
     try {
       cleanup()
-      const html = generateHtmlReport(state.fileName, state.report)
+      const html = generateHtmlReport(thesisName, state.report)
       const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       urlRef.current = url
       const a = document.createElement('a')
       a.href = url
-      a.download = `格式检测报告-${state.fileName.replace('.docx', '')}.html`
+      a.download = `格式检测报告-${thesisName.replace('.docx', '')}.html`
       a.click()
       setTimeout(cleanup, 1000)
     } catch (err) {
@@ -38,12 +40,12 @@ export default function ReportExport() {
     if (!state.report) return
     try {
       cleanup()
-      const blob = await generateDocxReportBlob(state.fileName, state.report)
+      const blob = await generateDocxReportBlob(thesisName, state.report)
       const url = URL.createObjectURL(blob)
       urlRef.current = url
       const a = document.createElement('a')
       a.href = url
-      a.download = `格式检测报告-${state.fileName.replace('.docx', '')}.docx`
+      a.download = `格式检测报告-${thesisName.replace('.docx', '')}.docx`
       a.click()
       setTimeout(cleanup, 1000)
     } catch (err) {

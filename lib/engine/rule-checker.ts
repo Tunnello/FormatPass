@@ -84,7 +84,7 @@ function checkSingleRule(rule: FormatRule, doc: ExtractedDocument, styles: Map<s
   return { ...rule, status, actual, location }
 }
 
-function getTargetParagraphs(doc: ExtractedDocument, scope: string, level?: number) {
+export function getTargetParagraphs(doc: ExtractedDocument, scope: string, level?: number) {
   if (scope === 'body') {
     return doc.paragraphs.filter((p) => {
       if (!p.styleId) return true

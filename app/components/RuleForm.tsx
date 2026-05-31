@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context/AppContext'
-import { buildRulesFromForm } from '@/lib/engine/rule-builder'
+import { buildRulesFromForm, rulesToFormData } from '@/lib/engine/rule-builder'
 import { RuleFormData } from '@/lib/engine/rule-types'
 import { unzipDocx } from '@/lib/parser/docx-unzip'
 import { extractDocument, extractStyles } from '@/lib/parser/xml-extractor'
@@ -50,6 +50,12 @@ export default function RuleForm() {
     ],
   })
 
+  useEffect(() => {
+    if (state.rules.length > 0) {
+      setForm(rulesToFormData(state.rules))
+    }
+  }, [state.rules])
+
   const updatePage = (field: string, value: string | number) =>
     setForm((prev) => ({ ...prev, page: { ...prev.page, [field]: value } }))
   const updateBody = (field: string, value: string | number) =>
@@ -62,12 +68,12 @@ export default function RuleForm() {
     })
 
   const handleCheck = async () => {
-    if (!state.fileBuffer) return
+    if (!state.thesisFileBuffer) return
     dispatch({ type: 'START_PROCESSING' })
     setProgress(10)
 
     try {
-      const { documentXml, stylesXml } = await unzipDocx(state.fileBuffer)
+      const { documentXml, stylesXml } = await unzipDocx(state.thesisFileBuffer)
       setProgress(40)
       const doc = extractDocument(documentXml)
       const styles = stylesXml ? extractStyles(stylesXml) : new Map()
@@ -88,7 +94,10 @@ export default function RuleForm() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-medium mb-1 text-ink">填写格式规则</h2>
-          <p className="text-sm text-muted">文件：{state.fileName}</p>
+          <p className="text-sm text-muted">论文：{state.thesisFileName}</p>
+          {state.templateFileName && (
+            <p className="text-sm text-muted">模板：{state.templateFileName}</p>
+          )}
         </div>
         <button
           onClick={() => dispatch({ type: 'RESET' })}

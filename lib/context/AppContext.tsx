@@ -4,8 +4,10 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react'
 import { FormatRule } from '../engine/rule-types'
 
 interface AppState {
-  fileName: string
-  fileBuffer: ArrayBuffer | null
+  thesisFileName: string
+  thesisFileBuffer: ArrayBuffer | null
+  templateFileName: string
+  templateFileBuffer: ArrayBuffer | null
   rules: FormatRule[]
   report: FormatRule[] | null
   isProcessing: boolean
@@ -13,7 +15,7 @@ interface AppState {
 }
 
 type AppAction =
-  | { type: 'SET_FILE'; fileName: string; fileBuffer: ArrayBuffer }
+  | { type: 'SET_FILE'; role: 'thesis' | 'template'; fileName: string; fileBuffer: ArrayBuffer }
   | { type: 'SET_RULES'; rules: FormatRule[] }
   | { type: 'SET_REPORT'; report: FormatRule[] }
   | { type: 'START_PROCESSING' }
@@ -23,8 +25,10 @@ type AppAction =
   | { type: 'RESET' }
 
 const initialState: AppState = {
-  fileName: '',
-  fileBuffer: null,
+  thesisFileName: '',
+  thesisFileBuffer: null,
+  templateFileName: '',
+  templateFileBuffer: null,
   rules: [],
   report: null,
   isProcessing: false,
@@ -33,8 +37,12 @@ const initialState: AppState = {
 
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SET_FILE':
-      return { ...state, fileName: action.fileName, fileBuffer: action.fileBuffer, error: null }
+    case 'SET_FILE': {
+      if (action.role === 'thesis') {
+        return { ...state, thesisFileName: action.fileName, thesisFileBuffer: action.fileBuffer, error: null }
+      }
+      return { ...state, templateFileName: action.fileName, templateFileBuffer: action.fileBuffer, error: null }
+    }
     case 'SET_RULES':
       return { ...state, rules: action.rules }
     case 'SET_REPORT':
